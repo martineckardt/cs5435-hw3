@@ -31,6 +31,7 @@ def do_attack():
 
 	print("starting attack")
 	response = do_login_form(sess, uname, pw, attack_dict)
+	
 	print("response received")
 	print(response)
 
