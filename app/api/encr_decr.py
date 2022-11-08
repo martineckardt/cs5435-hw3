@@ -24,30 +24,41 @@ class Encryption(object):
             self._key = in_key
 
     def encrypt(self, msg):
-        padder = padding.PKCS7(ciphers.algorithms.AES.block_size).padder()
-        padded_msg = padder.update(msg) + padder.finalize()
+        # padder = padding.PKCS7(ciphers.algorithms.AES.block_size).padder()
+        # padded_msg = padder.update(msg) + padder.finalize()
+        
         iv = os.urandom(self._block_size_bytes)
         encryptor = ciphers.Cipher(ciphers.algorithms.AES(self._key),
-                                   ciphers.modes.CBC(iv),
+                                   ciphers.modes.GCM(iv),
                                    self._backend).encryptor()
-        _ciphertext = iv + encryptor.update(padded_msg) + encryptor.finalize()
-        return _ciphertext
+        _ciphertext = encryptor.update(msg) + encryptor.finalize()
+        return iv + encryptor.tag + _ciphertext
     
     def decrypt(self, ctx):
-        iv, ctx = ctx[:self._block_size_bytes], ctx[self._block_size_bytes:]
-        unpadder = padding.PKCS7(ciphers.algorithms.AES.block_size).unpadder()
+
+        iv = ctx[:self._block_size_bytes]
+        tag = ctx[self._block_size_bytes:][:self._block_size_bytes]
+        _ciphertext = ctx[len(iv) + len(tag):]
+
         decryptor = ciphers.Cipher(ciphers.algorithms.AES(self._key),
-                                   ciphers.modes.CBC(iv),
+                                   ciphers.modes.GCM(iv, tag),
                                    self._backend).decryptor()        
-        padded_msg = decryptor.update(ctx) + decryptor.finalize()
         try:
-            msg = unpadder.update(padded_msg) + unpadder.finalize()
+            msg = decryptor.update(_ciphertext) + decryptor.finalize()
             return msg  # Successful decryption
         except ValueError:
             return False  # Error!!
 
-    
+        
 
+    
+def test_encr_decr():
+    msg = "testing"
+    GCM = Encryption(bytearray(16))
+    ct = GCM.encrypt(msg.encode())
+    pt = GCM.decrypt(ct).decode()
+    print("MSG:", msg)
+    print("DECODED:", pt)
         
 if __name__=='__main__':
     test_encr_decr()
