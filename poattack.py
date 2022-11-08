@@ -35,8 +35,6 @@ class PaddingOracle(object):
         assert(do_login_form(sess, "attacker","attacker"))
         session_key = "admin"
         sess.cookies.set(name=session_key, value=ct.hex(), domain=sess.cookies.list_domains()[0])
-        response = do_setcoins_form(sess, "attacker", 5000)
-        result = "Bad padding for admin cookie!" in str(response.content)
         if "Bad padding for admin cookie!" in str(do_setcoins_form(sess, "attacker", 10).content):
             return False
         return True
